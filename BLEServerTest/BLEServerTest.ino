@@ -37,15 +37,14 @@ void setup() {
   BLEDevice::init("AardappelSap_BLETest");
   BLEServer *pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
-  BLEService *pService = pServer->createService(SERVICE_UUID);
+  BLEService *pService = pServer->createService(BLEUUID(SERVICE_UUID), 30, 0);
   pCharacteristic = pService->createCharacteristic(
                                          CHARACTERISTIC_UUID,
                                          BLECharacteristic::PROPERTY_READ |
-                                         BLECharacteristic::PROPERTY_WRITE |
                                          BLECharacteristic::PROPERTY_NOTIFY
                                        );
-  BLEDescriptor pCharacteristicDescriptor(BLEUUID((uint16_t)0x2903));
-  pCharacteristicDescriptor.setValue("Test Data");
+  BLEDescriptor pCharacteristicDescriptor(BLEUUID((uint16_t)0x2902));
+  //pCharacteristicDescriptor.setValue("Test Data");
   pCharacteristic->addDescriptor(&pCharacteristicDescriptor);
 
   pCharacteristic->setValue("Hello World says Keiran");
