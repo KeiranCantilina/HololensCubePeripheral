@@ -1,6 +1,6 @@
 using UnityEngine;
 
-#define NETFX_CORE
+//#define NETFX_CORE
 
 #if NETFX_CORE
 using Windows.Devices.Bluetooth.Advertisement;
@@ -15,19 +15,24 @@ public class ReceiveBLE : MonoBehaviour
 {
 
 #if NETFX_CORE
-    BluetoothLEAdvertisementWatcher watcher;
-    public static ushort BEACON_ID = 1775;
-    public static Guid SERVICE_UUID = "56507bcc-dc2f-44b6-8d75-ab321779368c";
-    public static Guid CHARACTERISTIC_UUID = "470d57b4-95d2-439b-a6cb-b1e68eb55352";
+    private BluetoothLEAdvertisementWatcher watcher;
+    //public static ushort BEACON_ID = 1775;
+
+    // UUIDs from our BLE server device
+    private static Guid SERVICE_UUID = "56507bcc-dc2f-44b6-8d75-ab321779368c";
+    private static Guid CHARACTERISTIC_UUID = "470d57b4-95d2-439b-a6cb-b1e68eb55352";
+
+    // Global vars and flags
     private BluetoothAddressType deviceAddressType;
     private UInt64 deviceAddress;
-    public bool deviceFound = false;
-    public bool deviceConnected = false;
-    BluetoothLEDevice bluetoothLeDevice;
+    
+    private BluetoothLEDevice bluetoothLeDevice;
     private GattCharacteristic selectedCharacteristic;
 
 #endif
     public EventProcessor eventProcessor;
+    private bool deviceFound = false;
+    private bool deviceConnected = false;
 
 
     // Run on awake
@@ -84,11 +89,16 @@ public class ReceiveBLE : MonoBehaviour
     }
 #endif
 
+    public void Connect(){
+    #if NETFX_CORE
+        ConnectDevice(deviceAddress, deviceAddressType);
+    #endif
+    }
 
-    // Connect to our device
+    // Connect to our device (to be triggered from UI
 #if NETFX_CORE
-    async void ConnectDevice(UInt64 address, BluetoothAddressType addresstype)
-    {
+    private async void ConnectDevice(UInt64 address, BluetoothAddressType addresstype){
+    
         // Note: BluetoothLEDevice.FromIdAsync must be called from a UI thread because it may prompt for consent.
         bluetoothLeDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(address, addresstype);
 
@@ -130,9 +140,13 @@ public class ReceiveBLE : MonoBehaviour
                         GattClientCharacteristicConfigurationDescriptorValue.Notify);
         if (status == GattCommunicationStatus.Success){
             // Server has been informed of clients interest.
+
             // Trigger flag to indicate device connected and subscribed!
-            characteristic.ValueChanged += Characteristic_ValueChanged; // Link notify events to callback Characteristic_ValueChanged(); 
             deviceConnected = true;
+
+            // Link notify events to callback Characteristic_ValueChanged(); 
+            characteristic.ValueChanged += Characteristic_ValueChanged; 
+            
         }
         else{
             // Throw error
@@ -141,7 +155,8 @@ public class ReceiveBLE : MonoBehaviour
 #endif
 
 
-// This runs when a Notify event triggers
+
+    // This runs when a Notify event triggers
 #if NETFX_CORE
     void Characteristic_ValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args){
 
@@ -155,7 +170,7 @@ public class ReceiveBLE : MonoBehaviour
     }
 #endif
 
-// Probably won't ever be used
+    // Probably won't ever be used
 #if NETFX_CORE
     async void ReadData(){
         // Nothing here yet; we shouldn't need this if notify works correctly
@@ -164,11 +179,20 @@ public class ReceiveBLE : MonoBehaviour
 
     // Disconnect from our device gracefully
 #if NETFX_CORE
-    async void DisconnectDevice(){
+    public async void DisconnectDevice(){
         bluetoothLeDevice.Dispose();
     }
 #endif
 
+    // Flag reading methods
+    public bool ReadDeviceFoundFlag()
+    {
+        return deviceFound;
+    }
+    public bool ReadDeviceConnectedFlag()
+    {
+        return deviceConnected;
+    }
 
 
 }
