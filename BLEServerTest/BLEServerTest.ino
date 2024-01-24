@@ -8,6 +8,8 @@
 int led = LED_BUILTIN;
 bool deviceConnected = false;
 BLECharacteristic *pCharacteristic;
+BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
+const char ManufacturerData[] = "PUDGIES!";
 
 //Setup callbacks onConnect and onDisconnect
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -50,9 +52,16 @@ void setup() {
   pCharacteristic->setValue("Hello World says Keiran");
   pService->start();
   // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
+  
+  
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(true);
+
+  oAdvertisementData.setShortName("Cubii");
+  oAdvertisementData.setManufacturerData(ManufacturerData);
+  pAdvertising->setAdvertisementData(oAdvertisementData);
+
   pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
