@@ -3,10 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+
 
 public class EventProcessor : MonoBehaviour
 {
-    public Text TextDebug;
+    //public Text TextDebug;
+    public TextMeshPro TextDebug; // Replaced with TextMeshPro object as the old Unity text mesh is deprecated
     public Transform CubeOrientation;
 
     private System.Object _queueLock = new System.Object();
@@ -55,6 +58,22 @@ public class EventProcessor : MonoBehaviour
                 _processingData.Add(data);
                 _queuedData.RemoveAt(0);
             }
+        }
+    }
+
+    private void PrintFlags(bool devicefound, bool deviceconnected)
+    {
+        if (devicefound && deviceconnected)
+        {
+            TextDebug.text = "Device Found and Connected!";
+        }
+        if(devicefound && !deviceconnected)
+        {
+            TextDebug.text = "Device Found and not yet connected!";
+        }
+        else
+        {
+
         }
     }
 }

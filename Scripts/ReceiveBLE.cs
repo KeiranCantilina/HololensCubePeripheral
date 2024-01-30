@@ -84,6 +84,9 @@ public class ReceiveBLE : MonoBehaviour
         // Update flag so we know we found our device. Make sure connect button is active when this flag triggers
         deviceFound = true;
 
+        // Print flags to log
+        eventProcessor.PrintFlags(deviceFound, deviceConnected);
+
         // Connect if we find our device
         //ConnectDevice(deviceAddress, deviceAddressType); // commented out to initiate from UI
     }
@@ -143,6 +146,9 @@ public class ReceiveBLE : MonoBehaviour
 
             // Trigger flag to indicate device connected and subscribed!
             deviceConnected = true;
+
+            // Print to debug text
+            eventProcessor.PrintFlags(deviceFound, deviceConnected);
 
             // Link notify events to callback Characteristic_ValueChanged(); 
             characteristic.ValueChanged += Characteristic_ValueChanged; 
