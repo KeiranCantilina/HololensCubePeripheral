@@ -61,7 +61,7 @@ public class EventProcessor : MonoBehaviour
         }
     }
 
-    private void PrintFlags(bool devicefound, bool deviceconnected)
+    public void PrintFlags(bool devicefound, bool deviceconnected)
     {
         if (devicefound && deviceconnected)
         {
@@ -75,5 +75,26 @@ public class EventProcessor : MonoBehaviour
         {
 
         }
+    }
+
+    public void StartupDialogA()
+    {
+        TextDebug.text = "Looking for Device...A";
+    }
+    public void StartupDialogB()
+    {
+        TextDebug.text = "Looking for Device...B";
+    }
+    public void StartupDialogC()
+    {
+        TextDebug.text = "Looking for Device...C";
+    }
+    public void StartupDialogD()
+    {
+        TextDebug.text = "Looking for Device...D";
+    }
+    public void StartupDialogE()
+    {
+        TextDebug.text = "Looking for Device...E";
     }
 }
