@@ -10,7 +10,8 @@
 #define CHARACTERISTIC_UUID "470d57b4-95d2-439b-a6cb-b1e68eb55352"
 
 // IMU Define
-#define BNO085
+//#define BNO085
+#define DEBUG
 bool MPUConnected = false;
 #ifdef MPU6050
   #include <Adafruit_MPU6050.h>
@@ -33,7 +34,7 @@ int led = LED_BUILTIN;
 bool deviceConnected = false;
 BLECharacteristic *pCharacteristic;
 BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
-const char ManufacturerData[] = "PUDGIES!";
+//const char ManufacturerData[] = "PUDGIES!";
 
 // Float/Byte string conversion union
 typedef union
@@ -156,11 +157,18 @@ String GetOrientation(){
         break;
     }
   #endif
+  
 
   // Stuffing quaternion data into a float array
-  float quaternionArray[4] = {rW.number, rX.number, rY.number, rZ.number};
+  float quaternionArray[4] = {rX.number, rY.number, rZ.number, rW.number};
+  #ifdef DEBUG
+  quaternionArray[0] = (float)0.1234;
+  quaternionArray[1] = (float)0.1234;
+  quaternionArray[2] = (float)0.1234;
+  quaternionArray[3] = (float)0.1234;
+  #endif
   
-  // Dirty convert quaternion float array to char array
+  // Dirty convert quaternion float array to char array (LITTLE ENDIAN)
   char quaternionChars[sizeof(quaternionArray)];
   memcpy(quaternionChars, &quaternionArray, sizeof(quaternionArray));
   return quaternionChars;
@@ -362,7 +370,7 @@ void setup() {
   pAdvertising->setScanResponse(true);
 
   oAdvertisementData.setShortName("Cubii");
-  oAdvertisementData.setManufacturerData(ManufacturerData);
+  //oAdvertisementData.setManufacturerData(ManufacturerData);
   pAdvertising->setAdvertisementData(oAdvertisementData);
 
   pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
@@ -374,7 +382,7 @@ void setup() {
 void loop() {
   // Say hi!
   Serial.println("Running");
-
+#ifndef DEBUG
   if(MPUConnected){
     String result = GetOrientation();
     // if empty string, break
@@ -384,6 +392,13 @@ void loop() {
       pCharacteristic->notify();
     }
   }
+#endif
+#ifdef DEBUG
+  String result = GetOrientation();
+  pCharacteristic->setValue(result);
+  pCharacteristic->notify();
+#endif
+
   delay(10);
   // for (int i = 0; i<1000; i++){
   //   digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
