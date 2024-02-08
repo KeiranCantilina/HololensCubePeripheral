@@ -97,4 +97,8 @@ public class EventProcessor : MonoBehaviour
     {
         TextDebug.text = "Looking for Device...E";
     }
+    public void DebugMessages(string text)
+    {
+        TextDebug.text = text;
+    }
 }

@@ -20,6 +20,7 @@ public class ReceiveBLE : MonoBehaviour
     // UUIDs from our BLE server device
     private static Guid SERVICE_UUID = Guid.Parse("56507bcc-dc2f-44b6-8d75-ab321779368c");
     private static Guid CHARACTERISTIC_UUID = Guid.Parse("470d57b4-95d2-439b-a6cb-b1e68eb55352");
+    private static string DeviceName = "Cubii";
 
     // Global vars and flags
     private BluetoothAddressType deviceAddressType;
@@ -50,6 +51,13 @@ public class ReceiveBLE : MonoBehaviour
         var ServiceID = SERVICE_UUID;
         watcher.AdvertisementFilter.Advertisement.ServiceUuids.Add(ServiceID);
 
+        // Filter by device local name ("Cubii")
+        //watcher.AdvertisementFilter.Advertisement.LocalName = DeviceName;
+
+        // Set some settings
+        watcher.AllowExtendedAdvertisements = true;
+        watcher.ScanningMode = BluetoothLEScanningMode.Active;
+
         // Old stuff
         /*var manufacturerData = new BluetoothLEManufacturerData
         {
@@ -65,17 +73,18 @@ public class ReceiveBLE : MonoBehaviour
 
         // Throw log message up
         eventProcessor.StartupDialogC();
-
+        //eventProcessor.DebugMessages(watcher.AdvertisementFilter.Advertisement.ServiceUuids[0].ToString());
+        eventProcessor.DebugMessages("Watcher Status: " + watcher.Status.ToString());
         
 #endif
-        eventProcessor.StartupDialogE();
+        //eventProcessor.StartupDialogE();
     }
 
 
 
     // Triggered when watcher received event calls back
 #if UNITY_WSA && !UNITY_EDITOR
-    private async void Watcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
+    private void Watcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
     {
         // Debug pring
         eventProcessor.StartupDialogD();
