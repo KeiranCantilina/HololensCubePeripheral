@@ -347,7 +347,7 @@ void setup() {
 
 
   // BLE Setup
-  BLEDevice::init("AardappelSap_BLETest");
+  BLEDevice::init("Cubii");
   BLEServer *pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
   BLEService *pService = pServer->createService(BLEUUID(SERVICE_UUID), 30, 0);
