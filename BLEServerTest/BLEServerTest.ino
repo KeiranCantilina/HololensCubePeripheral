@@ -34,15 +34,18 @@ int led = LED_BUILTIN;
 bool deviceConnected = false;
 BLECharacteristic *pCharacteristic;
 BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
+float quaternionArray[4];
+byte packetArray[16];
 //const char ManufacturerData[] = "PUDGIES!";
 
 // Float/Byte string conversion union
-typedef union
-{
-  float number;
-  uint8_t bytes[4];
-} FLOATUNION_t;
-FLOATUNION_t rX, rY, rZ, rW;
+// typedef union
+// {
+//   float number;
+//   uint8_t bytes[4];
+// } FLOATUNION_t;
+// FLOATUNION_t rX, rY, rZ, rW;
+float rX, rY, rZ, rW;
 
 // BNO085 vars
 #ifdef BNO085
@@ -71,7 +74,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 
 // Function for getting orientation as a byte array sneakily disguised as a 16-byte string
-String GetOrientation(){
+void GetOrientation(){
 
   #ifdef BNO085
     delay(10);
@@ -84,41 +87,80 @@ String GetOrientation(){
     //Serial.println("Getting sensor data...");
 
     if (! bno08x.getSensorEvent(&sensorValue)) {
-      return "";
+      return;
     }
     
     switch (sensorValue.sensorId) {
       case SH2_GAME_ROTATION_VECTOR:
-        rW.number = sensorValue.un.gameRotationVector.real;
-        rX.number = sensorValue.un.gameRotationVector.i;
-        rY.number = sensorValue.un.gameRotationVector.j;
-        rZ.number = sensorValue.un.gameRotationVector.k;
+        rW = sensorValue.un.gameRotationVector.real;
+        rX = sensorValue.un.gameRotationVector.i;
+        rY = sensorValue.un.gameRotationVector.j;
+        rZ = sensorValue.un.gameRotationVector.k;
         Serial.print("Orientation Rotation Vector   w: ");
-        Serial.print(rW.number, 5);
+        Serial.print(rW, 5);
         Serial.print(" x: ");
-        Serial.print(rX.number, 5);
+        Serial.print(rX, 5);
         Serial.print(" y: ");
-        Serial.print(rY.number, 5);
+        Serial.print(rY, 5);
         Serial.print(" z: ");
-        Serial.println(rZ.number, 5);
+        Serial.println(rZ, 5);
         break;
     }
   #endif
   
 
   // Stuffing quaternion data into a float array
-  float quaternionArray[4] = {rX.number, rY.number, rZ.number, rW.number};
-  #ifdef DEBUG
-  quaternionArray[0] = (float)0.1286683;
-  quaternionArray[1] = (float)0.1286683;
-  quaternionArray[2] = (float)0.2573365;
-  quaternionArray[3] = (float)0.9490347;
-  #endif
   
+  #ifdef DEBUG
+  rX = -0.1286683;
+  rY = -0.1286683;
+  rZ = -0.2573365;
+  rW = -0.9490347;
+  // quaternionArray[0] = (float)-0.1286683;
+  // quaternionArray[1] = (float)-0.1286683;
+  // quaternionArray[2] = (float)-0.2573365;
+  // quaternionArray[3] = (float)-0.9490347;
+  quaternionArray[0] = (float)rX;
+  quaternionArray[1] = (float)rY;
+  quaternionArray[2] = (float)rZ;
+  quaternionArray[3] = (float)rW;
+  #endif
+  #ifndef DEBUG
+  quaternionArray[0] = (float)rX;
+  quaternionArray[1] = (float)rY;
+  quaternionArray[2] = (float)rZ;
+  quaternionArray[3] = (float)rW;
+
+  byte PpacketArray[16] = {
+  ((uint8_t*)&rX)[0],
+  ((uint8_t*)&rX)[1],
+  ((uint8_t*)&rX)[2],
+  ((uint8_t*)&rX)[3],
+  ((uint8_t*)&rY)[0],
+  ((uint8_t*)&rY)[1],
+  ((uint8_t*)&rY)[2],
+  ((uint8_t*)&rY)[3],
+  ((uint8_t*)&rZ)[0],
+  ((uint8_t*)&rZ)[1],
+  ((uint8_t*)&rZ)[2],
+  ((uint8_t*)&rZ)[3],
+  ((uint8_t*)&rW)[0],
+  ((uint8_t*)&rW)[1],
+  ((uint8_t*)&rW)[2],
+  ((uint8_t*)&rW)[3]
+  };
+  memcpy(packetArray, &PpacketArray, sizeof(packetArray));
+  #endif
+
+  Serial.println(quaternionArray[0]);
   // Dirty convert quaternion float array to char array (LITTLE ENDIAN)
-  char quaternionChars[sizeof(quaternionArray)];
-  memcpy(quaternionChars, &quaternionArray, sizeof(quaternionArray));
-  return quaternionChars;
+  //Serial.println("Stuffing quaternion array into string");
+  // char quaternionChars[sizeof(quaternionArray)];
+  // memcpy(quaternionChars, &quaternionArray, sizeof(quaternionArray));
+  // Serial.print("Char array: ");
+  // Serial.println(quaternionChars);
+  // return quaternionChars;
+  //return quaternionArray;
 }
 
 
@@ -201,11 +243,15 @@ void loop() {
   //Serial.println("Running");
 #ifndef DEBUG
   if(MPUConnected){
-    String result = GetOrientation();
+    //float[] result = GetOrientation();
+    GetOrientation();
+    Serial.print("Sending Value: ");
+    Serial.println(packetArray[1], HEX);
     // if empty string, break
-    if(result != ""){
+    if(quaternionArray != NULL){
       //do stuff
-      pCharacteristic->setValue(result);
+      
+      pCharacteristic->setValue(packetArray, sizeof(packetArray));
       pCharacteristic->notify();
     }
     // else{
@@ -215,8 +261,13 @@ void loop() {
   }
 #endif
 #ifdef DEBUG
-  String result = GetOrientation();
-  pCharacteristic->setValue(result);
+  //String result = GetOrientation();
+  GetOrientation();
+  Serial.print("Sending Value: ");
+  Serial.println(packetArray[1], HEX);
+  //pCharacteristic->setValue(result);
+  
+  pCharacteristic->setValue(&packetArray, sizeof(packetArray));
   pCharacteristic->notify();
 #endif
 
