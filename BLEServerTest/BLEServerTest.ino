@@ -10,12 +10,10 @@
 #define CHARACTERISTIC_UUID "470d57b4-95d2-439b-a6cb-b1e68eb55352"
 
 // IMU Define
-//#define BNO085
-#define DEBUG
-bool MPUConnected = false;
-#ifdef MPU6050
-  #include <Adafruit_MPU6050.h>
-#endif
+#define BNO085
+//#define DEBUG
+bool MPUConnected;
+
 #ifdef BNO085
   #include <Adafruit_BNO08x.h>
   #include <sh2.h>
@@ -24,9 +22,11 @@ bool MPUConnected = false;
   #include <sh2_hal.h>
   #include <sh2_util.h>
   #include <shtp.h>
-  #define BNO08X_CS 10 // Change these
-  #define BNO08X_INT 9
-  #define BNO08X_RESET 5
+
+  // Pinout
+  #define BNO08X_CS 10 // Chip Select active low
+  #define BNO08X_INT 9 // Interrupt active low
+  #define BNO08X_RESET 5 // Reset active low
 #endif
 
 // BLE and Misc vars
@@ -43,21 +43,6 @@ typedef union
   uint8_t bytes[4];
 } FLOATUNION_t;
 FLOATUNION_t rX, rY, rZ, rW;
-
-// MPU6050 Vars
-#ifdef MPU6050
-Adafruit_MPU6050 mpu;
-
-float AccX, AccY, AccZ;
-float GyroX, GyroY, GyroZ;
-float accAngleX, accAngleY, accAngleZ;
-float gyroAngleX = 0;
-float gyroAngleY = 0;
-float gyroAngleZ = 0;
-float roll, pitch, yaw;
-float AccErrorX, AccErrorY, GyroErrorX, GyroErrorY, GyroErrorZ;
-float elapsedTime, currentTime, previousTime;
-#endif
 
 // BNO085 vars
 #ifdef BNO085
@@ -87,46 +72,6 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 // Function for getting orientation as a byte array sneakily disguised as a 16-byte string
 String GetOrientation(){
-  
-  #ifdef  MPU6050
-  sensors_event_t a, g;
-  mpu.getEvent(&a, &g);
-  AccX = a.acceleration.x - AccErrorX;
-  AccY = a.acceleration.y - AccErrorY;
-  AccZ = a.acceleration.z - AccErrorZ;
-  GyroX = g.gyro.x - GyroErrorX;
-  GyroY = g.gyro.y - GyroErrorY;
-  GyroZ = g.gyro.z - GyroErrorZ;
-  previousTime = currentTime;        // Previous time is stored before the actual time read
-  currentTime = millis();            // Current time actual time read
-  elapsedTime = (currentTime - previousTime) / 1000; // Divide by 1000 to get seconds
-
-  // THIS ALL NEEDS TO BE REDONE 
-  /*
-  // Roll and pitch calculations
-  accAngleX = (atan(AccY / sqrt(pow(AccX, 2) + pow(AccZ, 2))) * 180 / PI); // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
-  accAngleY = (atan(-1 * AccX / sqrt(pow(AccY, 2) + pow(AccZ, 2))) * 180 / PI); // AccErrorY ~(-1.58)
-  
-
-  // Currently the raw values are in radians per seconds, rad/s, so we need to multiply by sendonds (s) to get the angle in degrees
-  gyroAngleX = gyroAngleX + GyroX * elapsedTime; // deg/s * s = deg
-  gyroAngleY = gyroAngleY + GyroY * elapsedTime;
-  yaw =  yaw + GyroZ * elapsedTime;
-
-  */
-
-  // Complementary filter - combine acceleromter and gyro angle values
-  roll = 0.96 * gyroAngleX + 0.04 * accAngleX;
-  pitch = 0.96 * gyroAngleY + 0.04 * accAngleY;
-
-  // Print the values on the serial monitor
-  Serial.print(roll);
-  Serial.print("/");
-  Serial.print(pitch);
-  Serial.print("/");
-  Serial.println(yaw);
-  
-  #endif
 
   #ifdef BNO085
     delay(10);
@@ -136,17 +81,19 @@ String GetOrientation(){
       setReports();
     }
     
+    //Serial.println("Getting sensor data...");
+
     if (! bno08x.getSensorEvent(&sensorValue)) {
       return "";
     }
     
     switch (sensorValue.sensorId) {
-      case SH2_ROTATION_VECTOR:
+      case SH2_GAME_ROTATION_VECTOR:
         rW.number = sensorValue.un.gameRotationVector.real;
         rX.number = sensorValue.un.gameRotationVector.i;
         rY.number = sensorValue.un.gameRotationVector.j;
         rZ.number = sensorValue.un.gameRotationVector.k;
-        Serial.print("Orientation Rotation Vector - w: ");
+        Serial.print("Orientation Rotation Vector   w: ");
         Serial.print(rW.number, 5);
         Serial.print(" x: ");
         Serial.print(rX.number, 5);
@@ -162,10 +109,10 @@ String GetOrientation(){
   // Stuffing quaternion data into a float array
   float quaternionArray[4] = {rX.number, rY.number, rZ.number, rW.number};
   #ifdef DEBUG
-  quaternionArray[0] = (float)0.1234;
-  quaternionArray[1] = (float)0.1234;
-  quaternionArray[2] = (float)0.1234;
-  quaternionArray[3] = (float)0.1234;
+  quaternionArray[0] = (float)0.1286683;
+  quaternionArray[1] = (float)0.1286683;
+  quaternionArray[2] = (float)0.2573365;
+  quaternionArray[3] = (float)0.9490347;
   #endif
   
   // Dirty convert quaternion float array to char array (LITTLE ENDIAN)
@@ -174,61 +121,10 @@ String GetOrientation(){
   return quaternionChars;
 }
 
-#ifdef MPU6050
-void calculate_IMU_error() {
-  // We can call this funtion in the setup section to calculate the accelerometer and gyro data error. From here we will get the error values used in the above equations printed on the Serial Monitor.
-  // Note that we should place the IMU flat in order to get the proper values, so that we then can the correct values
-  // Read accelerometer values 200 times
-  while (c < 200) {
-    sensors_event_t a, g;
-    mpu.getEvent(&a, &g);
-    AccX = a.acceleration.x;
-    AccY = a.acceleration.y;
-    AccZ = a.acceleration.z;
 
-    // Sum all readings
-    AccErrorX = AccErrorX + AccX;
-    AccErrorY = AccErrorY + AccY;
-    AccErrorZ = AccErrorZ + AccZ;
-    c++;
-  }
-
-  //Divide the sum by 200 to get the error value
-  AccErrorX = AccErrorX / 200;
-  AccErrorY = AccErrorY / 200;
-  AccErrorZ = AccErrorZ / 200;
-  c = 0;
-
-  // Read gyro values 200 times
-  while (c < 200) {
-    GyroX = g.gyro.x;
-    GyroY = g.gyro.y;
-    GyroZ = g.gyro.z;
-    // Sum all readings
-    GyroErrorX = GyroErrorX + GyroX;
-    GyroErrorY = GyroErrorY + GyroY;
-    GyroErrorZ = GyroErrorZ + GyroZ;
-    c++;
-  }
-  //Divide the sum by 200 to get the error value
-  GyroErrorX = GyroErrorX / 200;
-  GyroErrorY = GyroErrorY / 200;
-  GyroErrorZ = GyroErrorZ / 200;
-  // Print the error values on the Serial Monitor
-  Serial.print("AccErrorX: ");
-  Serial.println(AccErrorX);
-  Serial.print("AccErrorY: ");
-  Serial.println(AccErrorY);
-  Serial.print("GyroErrorX: ");
-  Serial.println(GyroErrorX);
-  Serial.print("GyroErrorY: ");
-  Serial.println(GyroErrorY);
-  Serial.print("GyroErrorZ: ");
-  Serial.println(GyroErrorZ);
-}
-#endif
 
 void setup() {
+  MPUConnected = false;
   // Some boards work best if we also make a serial connection
   Serial.begin(115200);
   delay(1000);
@@ -260,90 +156,11 @@ void setup() {
   }
 
   setReports();
-
+  MPUConnected = true;
   Serial.println("Reading events");
   delay(100);
 #endif
 
-#ifdef MPU6050
-  // MPU6050 Setup
-  // Try to initialize!
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    MPUConnected = false;
-  }
-  else{
-    Serial.println("MPU6050 Found!");
-    MPUConnected = true;
-
-    mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-    Serial.print("Accelerometer range set to: ");
-    switch (mpu.getAccelerometerRange()) {
-    case MPU6050_RANGE_2_G:
-      Serial.println("+-2G");
-      break;
-    case MPU6050_RANGE_4_G:
-      Serial.println("+-4G");
-      break;
-    case MPU6050_RANGE_8_G:
-      Serial.println("+-8G");
-      break;
-    case MPU6050_RANGE_16_G:
-      Serial.println("+-16G");
-      break;
-    }
-  
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-    Serial.print("Gyro range set to: ");
-    switch (mpu.getGyroRange()) {
-    case MPU6050_RANGE_250_DEG:
-      Serial.println("+- 250 deg/s");
-      break;
-    case MPU6050_RANGE_500_DEG:
-      Serial.println("+- 500 deg/s");
-      break;
-    case MPU6050_RANGE_1000_DEG:
-      Serial.println("+- 1000 deg/s");
-      break;
-    case MPU6050_RANGE_2000_DEG:
-      Serial.println("+- 2000 deg/s");
-      break;
-    }
-
-    mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
-    Serial.print("Filter bandwidth set to: ");
-    switch (mpu.getFilterBandwidth()) {
-    case MPU6050_BAND_260_HZ:
-      Serial.println("260 Hz");
-      break;
-    case MPU6050_BAND_184_HZ:
-      Serial.println("184 Hz");
-      break;
-    case MPU6050_BAND_94_HZ:
-      Serial.println("94 Hz");
-      break;
-    case MPU6050_BAND_44_HZ:
-      Serial.println("44 Hz");
-      break;
-    case MPU6050_BAND_21_HZ:
-      Serial.println("21 Hz");
-      break;
-    case MPU6050_BAND_10_HZ:
-      Serial.println("10 Hz");
-      break;
-    case MPU6050_BAND_5_HZ:
-      Serial.println("5 Hz");
-      break;
-    }
-
-    // Calibration
-    calculate_IMU_error();
-
-    // Spaceeee
-    Serial.println("");
-    delay(100);
-  }
-#endif
 
 
   // BLE Setup
@@ -360,7 +177,7 @@ void setup() {
   //pCharacteristicDescriptor.setValue("Test Data");
   pCharacteristic->addDescriptor(&pCharacteristicDescriptor);
 
-  pCharacteristic->setValue("Hello World says Keiran");
+  // pCharacteristic->setValue("Hello World says Keiran");
   pService->start();
   // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
   
@@ -381,7 +198,7 @@ void setup() {
 
 void loop() {
   // Say hi!
-  Serial.println("Running");
+  //Serial.println("Running");
 #ifndef DEBUG
   if(MPUConnected){
     String result = GetOrientation();
@@ -391,6 +208,10 @@ void loop() {
       pCharacteristic->setValue(result);
       pCharacteristic->notify();
     }
+    // else{
+    //   MPUConnected = false;
+    //   Serial.println("MPU Disconnected! Error State :(");
+    // }
   }
 #endif
 #ifdef DEBUG
