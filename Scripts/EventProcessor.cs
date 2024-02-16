@@ -37,13 +37,11 @@ public class EventProcessor : MonoBehaviour
             try
             {
                 var IMUData = IMU_DataPacket.ParseDataPacket(byteData);
-                TextDebug.text = IMUData.ToString() + "\r\n" + IMUData.rX.ToString();
+                TextDebug.text = IMUData.ToString();// + "\r\n" + IMUData.rX.ToString();
                 //UPDATE CUBE ORIENTATION HERE
-                //CubeOrientation.localRotation.Set(IMUData.rX, IMUData.rY, IMUData.rZ, IMUData.rW);
                 Quaternion CubeOrientation = new Quaternion();
                 CubeOrientation.Set(IMUData.rX, IMUData.rY, IMUData.rZ, IMUData.rW);
-                this.transform.rotation = CubeOrientation;
-                //CubeOrientation.localPosition = CubeOrientation.localPosition;
+                this.transform.localRotation = CubeOrientation;
             }
             catch (Exception e)
             {

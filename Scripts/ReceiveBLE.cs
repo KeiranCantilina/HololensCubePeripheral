@@ -28,6 +28,7 @@ public class ReceiveBLE : MonoBehaviour
     
     private BluetoothLEDevice bluetoothLeDevice;
     private GattCharacteristic selectedCharacteristic;
+    //private GattDeviceService selectedService;
 
 #endif
     public EventProcessor eventProcessor;
@@ -129,6 +130,7 @@ public class ReceiveBLE : MonoBehaviour
         // Get the service from the list of services (should only be one)
         if (servicesresult.Status == GattCommunicationStatus.Success){
             var services = servicesresult.Services;
+            //selectedService = services[0];
 
             // Get the list of characteristics from our service by UUID (should only be one)
             GattCharacteristicsResult charresult = await services[0].GetCharacteristicsForUuidAsync(CHARACTERISTIC_UUID);
@@ -207,7 +209,9 @@ public class ReceiveBLE : MonoBehaviour
 
     public void Disconnect(){
 #if UNITY_WSA && !UNITY_EDITOR
+        //selectedService.Dispose();
         bluetoothLeDevice.Dispose();
+        //Awake();
 #endif
     }
 
