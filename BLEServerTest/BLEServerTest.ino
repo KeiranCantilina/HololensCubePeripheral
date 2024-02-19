@@ -10,6 +10,15 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+// Tare Button Stuff
+struct Button {
+    const uint8_t PIN;
+    uint32_t numberKeyPresses;
+    bool pressed;
+};
+Button button1 = {6, 0, false};
+
+
 // BLE UUIDs
 #define SERVICE_UUID        "56507bcc-dc2f-44b6-8d75-ab321779368c"
 #define CHARACTERISTIC_UUID "470d57b4-95d2-439b-a6cb-b1e68eb55352"
@@ -45,13 +54,21 @@ byte packetArray[16];
 //const char ManufacturerData[] = "PUDGIES!";
 float rX, rY, rZ, rW;
 
+
+
+// Interrupt Function
+void ARDUINO_ISR_ATTR isr() {
+    button1.numberKeyPresses += 1;
+    button1.pressed = true;
+}
+
+
 // BNO085 vars
 #ifdef BNO085
 Adafruit_BNO08x  bno08x(BNO08X_RESET);
 sh2_SensorValue_t sensorValue;
 quat_t tare = {0,0,0,1};
 quat_t dataQuat = {0,0,0,1};
-
 
 
 // Set reports function
@@ -204,6 +221,10 @@ void setup() {
   // set LED to be an output pin
   pinMode(led, OUTPUT);
 
+  // Setup interrupt pins
+  pinMode(button1.PIN, INPUT_PULLUP);
+  attachInterrupt(button1.PIN, isr, FALLING);
+
   // Test printing to serial in setup
   Serial.println("Setup Step 1 Complete!");
 
@@ -282,6 +303,12 @@ void loop() {
   
   #ifndef DEBUG
   if(IMUConnected){
+    // Check if we need to tare
+    if (button1.pressed) {
+        Serial.println("Tare");
+        setTare();
+        button1.pressed = false;
+    }
 
     // Grab latest orientation data from IMU
     GetOrientation();
