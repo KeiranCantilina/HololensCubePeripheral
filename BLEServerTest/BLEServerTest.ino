@@ -57,10 +57,10 @@ float rX, rY, rZ, rW;
 
 
 // Interrupt Function
-void ARDUINO_ISR_ATTR isr() {
-    button1.numberKeyPresses += 1;
-    button1.pressed = true;
-}
+// void ARDUINO_ISR_ATTR isr() {
+//     button1.numberKeyPresses += 1;
+//     button1.pressed = true;
+// }
 
 
 // BNO085 vars
@@ -206,7 +206,10 @@ void GetOrientation(){
   };
 
   // For some reason this works better, instead of making PpacketArray a global variable
-  memcpy(packetArray, &PpacketArray, sizeof(packetArray));
+  memcpy(packetArray, PpacketArray, sizeof(packetArray));
+
+  Serial.println(packetArray[1], HEX);
+  Serial.println(PpacketArray[1], HEX);
 }
 
 
@@ -222,8 +225,8 @@ void setup() {
   pinMode(led, OUTPUT);
 
   // Setup interrupt pins
-  pinMode(button1.PIN, INPUT_PULLUP);
-  attachInterrupt(button1.PIN, isr, FALLING);
+  //pinMode(button1.PIN, INPUT_PULLUP);
+  //attachInterrupt(button1.PIN, isr, FALLING);
 
   // Test printing to serial in setup
   Serial.println("Setup Step 1 Complete!");
@@ -256,7 +259,7 @@ void setup() {
   IMUConnected = true;
 
   // Tare IMU
-  setTare();
+  //setTare();
 
   Serial.println("Reading events");
 
@@ -304,11 +307,11 @@ void loop() {
   #ifndef DEBUG
   if(IMUConnected){
     // Check if we need to tare
-    if (button1.pressed) {
-        Serial.println("Tare");
-        setTare();
-        button1.pressed = false;
-    }
+    // if (button1.pressed) {
+    //     Serial.println("Tare");
+    //     setTare();
+    //     button1.pressed = false;
+    // }
 
     // Grab latest orientation data from IMU
     GetOrientation();
@@ -317,11 +320,17 @@ void loop() {
     // Serial.println(packetArray[1], HEX);
 
     // if not empty data byte array, do stuff
-    if(packetArray[0] != NULL){
+    if(packetArray[1] != NULL){
       
       // Send data and notify
+      //Serial.print("Sending Value: ");
+      //Serial.println(packetArray[1], HEX);
       pCharacteristic->setValue(packetArray, sizeof(packetArray));
       pCharacteristic->notify();
+    }
+    else{
+      Serial.println("Packet Array Null!");
+      //Serial.println(packetArray[1], HEX);
     }
     // else{
     //   IMUConnected = false;
@@ -334,7 +343,7 @@ void loop() {
   GetOrientation();
   Serial.print("Sending Value: ");
   Serial.println(packetArray[1], HEX);
-  pCharacteristic->setValue(&packetArray, sizeof(packetArray));
+  pCharacteristic->setValue(packetArray, sizeof(packetArray));
   pCharacteristic->notify();
 
   // Debug LED blinking
