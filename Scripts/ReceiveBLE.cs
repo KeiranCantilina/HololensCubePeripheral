@@ -38,10 +38,9 @@ public class ReceiveBLE : MonoBehaviour
 
     // Run on awake
     void Awake(){
-        eventProcessor.StartupDialogA();
+        eventProcessor.DebugMessages("ReceiveBLE: Awake");
 #if UNITY_WSA && !UNITY_EDITOR
-        // Debug pring
-        eventProcessor.StartupDialogB();
+        eventProcessor.DebugMessages("ReceiveBLE: Running UNITY_WSA");
 
         deviceFound = false;
 
@@ -73,12 +72,10 @@ public class ReceiveBLE : MonoBehaviour
         watcher.Start();
 
         // Throw log message up
-        eventProcessor.StartupDialogC();
-        //eventProcessor.DebugMessages(watcher.AdvertisementFilter.Advertisement.ServiceUuids[0].ToString());
-        eventProcessor.DebugMessages("Watcher Status: " + watcher.Status.ToString());
+        eventProcessor.DebugMessages("Device-Finder Status: " + watcher.Status.ToString());
         
 #endif
-        //eventProcessor.StartupDialogE();
+
     }
 
 
@@ -88,7 +85,7 @@ public class ReceiveBLE : MonoBehaviour
     private void Watcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
     {
         // Debug pring
-        eventProcessor.StartupDialogD();
+        eventProcessor.DebugMessages("ReceiveBLE: Watcher Received!");
 
         // Add here 
         deviceAddress = args.BluetoothAddress;
@@ -206,7 +203,6 @@ public class ReceiveBLE : MonoBehaviour
 #endif
 
     // Disconnect from our device gracefully
-
     public void Disconnect(){
 #if UNITY_WSA && !UNITY_EDITOR
         //selectedService.Dispose();

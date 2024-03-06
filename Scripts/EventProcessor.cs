@@ -40,7 +40,10 @@ public class EventProcessor : MonoBehaviour
                 TextDebug.text = IMUData.ToString();// + "\r\n" + IMUData.rX.ToString();
                 //UPDATE CUBE ORIENTATION HERE
                 Quaternion CubeOrientation = new Quaternion();
-                CubeOrientation.Set(IMUData.rX, IMUData.rY, IMUData.rZ, IMUData.rW);
+
+                // Convert IMU right-handed z-up [i,j,k,real] to Unity's left-handed y-up [x,y,z,w] 
+                // Will require object to be adjusted in Unity by x = -180, y = -90, z = 0; starting adjust will be x = 180
+                CubeOrientation.Set(IMUData.rX*-1, IMUData.rZ*-1, IMUData.rY*-1, IMUData.rW);
                 this.transform.localRotation = CubeOrientation;
             }
             catch (Exception e)
@@ -76,30 +79,10 @@ public class EventProcessor : MonoBehaviour
         }
         else
         {
-
+        
         }
     }
 
-    public void StartupDialogA()
-    {
-        TextDebug.text = "Looking for Device...A";
-    }
-    public void StartupDialogB()
-    {
-        TextDebug.text = "Looking for Device...B";
-    }
-    public void StartupDialogC()
-    {
-        TextDebug.text = "Looking for Device...C";
-    }
-    public void StartupDialogD()
-    {
-        TextDebug.text = "Looking for Device...D";
-    }
-    public void StartupDialogE()
-    {
-        TextDebug.text = "Looking for Device...E";
-    }
     public void DebugMessages(string text)
     {
         TextDebug.text = text;
